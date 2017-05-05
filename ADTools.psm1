@@ -1,4 +1,5 @@
-﻿function Get-UserDetails {
+﻿# This was my very first script. Its clumsy and really could do with a refresh. Don't judge me :-Þ
+function Get-UserDetails {
 <#
 .SYNOPSIS
  Get key details of a user object
@@ -21,18 +22,18 @@
 #TODO make one to find and open the Remote Desktop Profile dir
 
 .PARAMETER Tel
- Adds the Office telephone and mobile phone to the output
+ Adds the Office telephone and MobilePhone phone to the output
 
 .PARAMETER UName
  Adds the Username to the output
 
-.PARAMETER Empid
+.PARAMETER EmployeeNumber
  Adds the Employee ID to the output
 
-.PARAMETER Dept
+.PARAMETER Department
  Adds the department to the output
             
-.PARAMETER HomeDir
+.PARAMETER HomeDirectory
  Adds the Home Directory to the output
             
 .PARAMETER Manager
@@ -54,15 +55,16 @@
  Will return details of anyone named Ron Rivest
 
 .EXAMPLE
- get-UserDetails -UserName "DNABC12"
- Will return the details of a user with the username DNABC12
+ get-UserDetails -UserName "ABC12"
+ Will return the details of a user with the username ABC12
 
 .EXAMPLE
- get-UserDetails -SamId "DNABC12"
- Will return the details of a user with the username DNABC12
+ get-UserDetails -SamId "ABC12"
+ Will return the details of a user with the username ABC12
 
 .NOTES
  Author: Dave Bremer
+ 
  
 
 #>
@@ -89,9 +91,9 @@
 
             [switch] $Tel, #telephone - both office and cell
             [switch] $UName, #username
-            #[switch] $empid,
-            [switch] $dept,
-           # [switch] $HomeDir,
+            [switch] $EmployeeNumber,
+            [switch] $Department,
+           # [switch] $HomeDirectory,
             [switch] $manager,
             [switch] $Pass,
             [switch] $Address,
@@ -131,29 +133,30 @@
                     $prop = @{"Name"=$User.DisplayName}
 
                     Switch ($PSBoundParameters) {
-                            {$PSBoundParameters.Keys -contains 'Tel'} {$prop.Add("Extension",$User.OfficePhone)
-                                                                        $prop.add("Mobile",$User.MobilePhone)
+                            {$PSBoundParameters.Keys -contains 'Tel'} {$prop.Add("OfficePhone",$User.OfficePhone)
+                                                                        $prop.add("MobilePhone",$User.MobilePhonePhone)
                                                                         $prop.add("ipPhone",$User.ipPhone)
                                                                         }
 
                             {$PSBoundParameters.Keys -contains 'UName'} {$prop.add("Username", $user.SamAccountName)}
 
-                            {$PSBoundParameters.Keys -contains 'Empid'} {$prop.Add("Empid", $User.EmployeeID)}
+                            {$PSBoundParameters.Keys -contains 'EmployeeNumber'} {$prop.Add("EmployeeNumber", $User.EmployeeNumber)}
                             
-                            {$PSBoundParameters.Keys -contains 'Dept'} {$prop.Add("Dept", $User.Department)}
+                            {$PSBoundParameters.Keys -contains 'Department'} {$prop.Add("Department", $User.Department)}
 
-                            #{$PSBoundParameters.Keys -contains 'HomeDir'} {$prop.Add("HomeDir", $User.HomeDirectory)}
-                            {$PSBoundParameters.Keys -contains 'UPN'} {$prop.Add("UPN", $User.UserPrincipalName)}
+                            #{$PSBoundParameters.Keys -contains 'HomeDirectory'} {$prop.Add("HomeDirectory", $User.HomeDirectoryectory)}
+                            {$PSBoundParameters.Keys -contains 'UPN'} {$prop.Add("UserPrincipalName", $User.UserPrincipalName)}
                             {$PSBoundParameters.Keys -contains 'Manager'} {$prop.Add("Manager", ($User.Manager -replace "(CN=)(.*?),.*",'$2'))}
                             {$PSBoundParameters.Keys -contains 'Pass'} {$prop.Add("PassExpired", $User.PasswordExpired)
                                                                         $prop.Add("PassLastSet", $User.PasswordLastSet)
                                                                         $prop.Add("Enabled", $User.Enabled)
                                                                         $prop.Add("LockedOut",$user.LockedOut)
+                                                                        $prop.Add("LastLogon",[DateTime]::FromFileTime($user."lastlogontimestamp"))
                                                                         }
 
 
                             {$PSBoundParameters.Keys -contains 'Address'} { $prop.Add("Title", $User.Title)
-                                                                            $prop.Add("Dept", $User.Department)
+                                                                            $prop.Add("Department", $User.Department)
                                                                             $prop.Add("Office", $user.Office)
                                                                             $prop.Add("OfficeName", $User.physicalDeliveryOfficeName)
                                                                             $prop.Add("st", $user.st)
@@ -164,30 +167,33 @@
                             default {$prop = @{  "OU" = $User.CanonicalName;
                                                 "Name" = $User.DisplayName;
                                                 "Email" = $User.EmailAddress;
-                                                #"EmpID" = $User.EmployeeID;
+                                                "EmployeeNumber" = $User.EmployeeNumber;
                                                 "Title" = $User.Title;
-                                                "Dept" = $User.Department;
+                                                "Department" = $User.Department;
                                                 "Office" = $user.Office;
                                                 "OfficeName" = $User.physicalDeliveryOfficeName;
                                                 "st" = $user.st;
                                                 "State" = $user.State;
                                                 "StreetAddress" = $user.StreetAddress;
-                                                #"HomeDir" = $User.HomeDirectory;
+                                                "City" = $user.City;
+                                                #"HomeDirectory" = $User.HomeDirectoryectory;
                                                 "Manager" = $User.Manager -replace "(CN=)(.*?),.*",'$2';
-                                                "Mobile" = $User.MobilePhone
-                                                "Extension"= $User.OfficePhone;
+                                                "MobilePhone" = $User.MobilePhonePhone;
+                                                "OfficePhone"= $User.OfficePhone;
                                                 "Created" = $User.whenCreated;
                                                 "PassExpired" = $User.PasswordExpired;
                                                 "PassLastSet" = $User.PasswordLastSet;
+                                                "LastLogon" = [DateTime]::FromFileTime($user."lastlogontimestamp");
                                                 "Username" = $user.SamAccountName;
                                                 "Enabled" = $user.Enabled;
                                                 "LockedOut" = $user.LockedOut;
-                                                #"ProfilePath" = $user.ProfilePath
-                                                "UPN" = $user.UserPrincipalName;
-                                                "opPhone" = $user.ipPhone
+                                                "ProfilePath" = $user.ProfilePath;
+                                                "UserPrincipalName" = $user.UserPrincipalName;
+                                                "ipPhone" = $user.ipPhone
                                                } # prop
                                 } #default
-                        } #switch
+                        
+                        } #switch PSBoundParameters
 
                         $obj = New-Object -TypeName PSObject -Property $prop
                         $obj.psobject.typenames.insert(0, 'daveb.systools.userdetails')
@@ -195,7 +201,7 @@
 
                         Write-Output $obj 
 
-                      #  if ($OpenHD) { start $user.HomeDirectory } 
+                      #  if ($OpenHD) { start $user.HomeDirectoryectory } 
                       #  if ($OpenP) { start $user.ProfilePath } 
 
                     } #foreach $userobj
@@ -204,87 +210,6 @@
         } #Process
 
     END{}
-}
-
-function Get-LastLogonToAD {
-<#
-.SYNOPSIS
- Gets the last login time for a username by querying all domain controllers
-
-.DESCRIPTION
- Gets the last login time for a username by querying all domain controllers
-
-.PARAMETER UserName
-Username to search
-
-
-.EXAMPLE
-Get-LastLogonToAD -username dndzbj0
-Returns the last login time for dndzbj0
-
-.NOTES
- Author: Dave Bremer
- 
-
-#>
-    [cmdletBinding()]
-    Param ([Parameter (
-            Mandatory=$True,
-            ValueFromPipeLine = $TRUE,
-            ValueFromPipelineByPropertyName = $TRUE
-                )]
-            [ValidateNotNullOrEmpty()]
-            [Alias('SamID')]
-            [string] $UserName
-            )
-
-BEGIN{
-    $dc = Get-ADDomainController -Filter * | Select-Object name
-    $tot = $dc.count
-    $user = $null
-    write-verbose "looking for $username"
-}
-
-PROCESS {
-         
-    $counter=0 #for progress bar
-    foreach ($c in $dc) {
-        #draw progress bar
-        $counter+=1
-        $prog=[system.math]::round($counter/$tot*100,2)
-        write-progress -activity ("Server {0}. {1} servers left to check" -f $c.name,($tot-$counter)) -status "$prog% Complete:" -percentcomplete $prog;
-        
-        #search server
-        try{
-            Write-verbose ("Server: {0}, User {1}" -f $c.name,$username)
-            $temp = get-aduser -Server $c.name -identity $username -Properties lastlogon
-            Write-Verbose $temp
-
-            Write-verbose ("{0} LastLogon {1}" -f $c.name,[DateTime]::FromFileTime($temp.lastlogon))
-
-            if ($user.LastLogon -lt $temp.lastlogon) { 
-                $user = $temp.PsObject.Copy() 
-                $recent = $c.name
-            }
-        } catch {
-        $recent = $null
-        Write-verbose ("Error getting from Server: {0}" -f $c.name)
-        
-        }
-    
-    }
-
-          
-    $prop = @{"LatestDC" = $recent;
-            "LastLogon" = [DateTime]::FromFileTime($user.lastlogon)
-            } # prop
-                               
-
-    $obj = New-Object -TypeName PSObject -Property $prop
-    $obj.psobject.typenames.insert(0, 'sdhb.adtools.userdetails')
-    Write-Output $obj 
-}
-END{}
 }
 
 function Remove-ADCompDNS {
@@ -305,7 +230,7 @@ Will remove PC159876 from AD and from DNS
 
 .EXAMPLE
 get-content h:\pclist.txt | Remove-ADCompDNS 
-Removes computers in the file from both AD and DSN. Will request confirmation for each
+Removes computers in the file from both AD and DNS. Will request confirmation for each
 
 .EXAMPLE
 get-content h:\pclist.txt | Remove-ADCompDNS -confirm:$false
@@ -350,27 +275,80 @@ PROCESS{
                                 }
                 
                 $obj = New-Object -TypeName PSObject -Property $LogAction
-                $obj.psobject.typenames.insert(0, 'sdhb.script.remove')
+                $obj.psobject.typenames.insert(0, 'daveb.script.remove')
                 Write-Output $obj
-                Export-Csv -Path "\\dnvfile03\infosys$\powershell\logs\remove-adcompdns.csv" -InputObject $obj -NoTypeInformation -Append # requires powershell 3 for append
+                Export-Csv -Path "\\MyFileServer01\MyShare$\powershell\logs\remove-adcompdns.csv" -InputObject $obj -NoTypeInformation -Append # requires powershell 3 for append
                
             } catch  { write-warning $_.Exception.Message}
 
             try{
-                Get-DnsServerResourceRecord -ComputerName dnad10 -ZoneName healthotago.co.nz -name $comp -ErrorAction Stop | 
-                    Remove-DnsServerResourceRecord -zone healthotago.co.nz -ComputerName dnad10 -confirm:$false -force
+                Get-DnsServerResourceRecord -ComputerName MyDomainController -ZoneName mydomain.co.nz -name $comp -ErrorAction Stop | 
+                    Remove-DnsServerResourceRecord -zone mydomain.co.nz -ComputerName MyDomainController -confirm:$false -force
                 $LogAction = @{"Date" = get-date;
-                                "Action" = "Removed from DNS healthotago.co.nz";
+                                "Action" = "Removed from DNS mydomain.co.nz";
                                 "Name" = $comp
                                 "RemovedBy" = $env:username
                               }
                 $obj = New-Object -TypeName PSObject -Property $LogAction
-                $obj.psobject.typenames.insert(0, 'sdhb.script.remove')
+                $obj.psobject.typenames.insert(0, 'daveb.script.remove')
                 Write-Output $obj
-                Export-Csv -Path "\\dnvfile03\infosys$\powershell\logs\remove-adcompdns.csv" -InputObject $obj -NoTypeInformation -Append # requires powershell 3 for append
+                Export-Csv -Path "\\MyFileServer01\MyShare$\powershell\logs\remove-adcompdns.csv" -InputObject $obj -NoTypeInformation -Append # requires powershell 3 for append
             } catch  { write-warning $_.Exception.Message}
         } #if should process
     } #foreach comp
+}
+
+END{}
+}
+
+function get-LAPSCred {
+<#
+.SYNOPSIS
+    Returns a PSCredential object for a computer
+ 
+
+.DESCRIPTION
+    Returns a PSCredential object for a computer
+ 
+
+.PARAMETER ComputerName
+    The hostname of a computer
+
+.EXAMPLE
+    $mycred = get-LAPSCred pc-1234
+    the variable $mycred can now be used in a credential switch for a command
+
+.EXAMPLE
+    $computername = pc-1234
+    get-WmiObject win32_logicaldisk -Computername $computername -Credential (get-LAPSCred $computername)
+
+    using the credential directly in a credential switch
+
+.NOTES
+ Author: Dave Bremer
+ Date: 6/5/2017
+
+#>
+[cmdletBinding()]
+Param ([Parameter (
+                Mandatory = $TRUE, 
+                ValueFromPipeLine = $TRUE,
+                ValueFromPipelineByPropertyName = $TRUE
+                )]
+            [Alias('cn')] 
+            [string] $ComputerName
+        )
+
+BEGIN {}
+
+
+PROCESS{            
+    
+    
+    $secpassword = ConvertTo-SecureString (Get-AdmPwdPassword -ComputerName $computername | select -expand password) -AsPlainText -Force
+    $cred = New-Object System.Management.Automation.PSCredential (“$computername\administrator",$secpassword)
+    $cred
+    
 }
 
 END{}
