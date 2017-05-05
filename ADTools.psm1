@@ -218,7 +218,8 @@ function Remove-ADCompDNS {
  Remove a objects and DNS entries for computers that are being disposed
 
 .DESCRIPTION
- Removes both the computer object from AD and the DNS entries for computers being disposed
+ Removes both the computer object from AD and the DNS entries for computers being disposed. This was written with some hard-coded servers.
+ It'd take some editing to make it work in another place - or to do it properly without hardcoding stuff. Knock yourself out.
 
 .PARAMETER ComputerName
 The name, or list of names, of computers to removeimport-module
