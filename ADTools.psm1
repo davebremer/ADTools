@@ -134,7 +134,8 @@ function Get-UserDetails {
 
                     Switch ($PSBoundParameters) {
                             {$PSBoundParameters.Keys -contains 'Tel'} {$prop.Add("OfficePhone",$User.OfficePhone)
-                                                                        $prop.add("MobilePhone",$User.MobilePhonePhone)
+                                                                        $prop.add("MobilePhone",$User.MobilePhone)
+                                                                        $prop.add("Mobile",$User.Mobile)
                                                                         $prop.add("ipPhone",$User.ipPhone)
                                                                         }
 
@@ -178,7 +179,8 @@ function Get-UserDetails {
                                                 "City" = $user.City;
                                                 #"HomeDirectory" = $User.HomeDirectoryectory;
                                                 "Manager" = $User.Manager -replace "(CN=)(.*?),.*",'$2';
-                                                "MobilePhone" = $User.MobilePhonePhone;
+                                                "MobilePhone" = $User.MobilePhone ;
+                                                "Mobile" = $User.Mobile;
                                                 "OfficePhone"= $User.OfficePhone;
                                                 "Created" = $User.whenCreated;
                                                 "PassExpired" = $User.PasswordExpired;
@@ -212,95 +214,7 @@ function Get-UserDetails {
     END{}
 }
 
-function Remove-ADCompDNS {
-<#
-.SYNOPSIS
- Remove a objects and DNS entries for computers that are being disposed
 
-.DESCRIPTION
- Removes both the computer object from AD and the DNS entries for computers being disposed. This was written with some hard-coded servers.
- It'd take some editing to make it work in another place - or to do it properly without hardcoding stuff. Knock yourself out.
-
-.PARAMETER ComputerName
-The name, or list of names, of computers to removeimport-module
--comp
-
-.EXAMPLE
-Remove-AdCompDNS -computername PC159876
-Will remove PC159876 from AD and from DNS
-
-.EXAMPLE
-get-content h:\pclist.txt | Remove-ADCompDNS 
-Removes computers in the file from both AD and DNS. Will request confirmation for each
-
-.EXAMPLE
-get-content h:\pclist.txt | Remove-ADCompDNS -confirm:$false
-Will NOT ask for confirmation so be sure and be careful
-
-.EXAMPLE
-gc h:\dispose.txt | remove-AdCompDNS -confirm:$false | ft -auto -wrap
-A nicer format of output of the output
- 
-
-
-.NOTES
- Author: Dave Bremer
- 
-
-#>
-[cmdletBinding(SupportsShouldProcess=$True,ConfirmImpact='High')]
-Param ([Parameter (
-                Mandatory = $TRUE, 
-                ValueFromPipeLine = $TRUE,
-                ValueFromPipelineByPropertyName = $TRUE
-                )]
-            [Alias('cn')] 
-            [string[]] $ComputerName
-        )
-
-BEGIN {}
-
-
-PROCESS{            
-    foreach ($comp in $computername) {
-        #Remove AD Computer
-
-        if ($pscmdlet.ShouldProcess(("Remove from AD and DNS: {0}" -f $comp,$group))) {
-        #remove AD object - use try/catch for object existing
-            try {
-                Remove-ADComputer -identity $comp -ErrorAction Stop
-                $LogAction = @{"Date" = get-date;
-                                "Action" = "Removed from AD";
-                                "Name" = $comp
-                                "RemovedBy" = $env:username
-                                }
-                
-                $obj = New-Object -TypeName PSObject -Property $LogAction
-                $obj.psobject.typenames.insert(0, 'daveb.script.remove')
-                Write-Output $obj
-                Export-Csv -Path "\\MyFileServer01\MyShare$\powershell\logs\remove-adcompdns.csv" -InputObject $obj -NoTypeInformation -Append # requires powershell 3 for append
-               
-            } catch  { write-warning $_.Exception.Message}
-
-            try{
-                Get-DnsServerResourceRecord -ComputerName MyDomainController -ZoneName mydomain.co.nz -name $comp -ErrorAction Stop | 
-                    Remove-DnsServerResourceRecord -zone mydomain.co.nz -ComputerName MyDomainController -confirm:$false -force
-                $LogAction = @{"Date" = get-date;
-                                "Action" = "Removed from DNS mydomain.co.nz";
-                                "Name" = $comp
-                                "RemovedBy" = $env:username
-                              }
-                $obj = New-Object -TypeName PSObject -Property $LogAction
-                $obj.psobject.typenames.insert(0, 'daveb.script.remove')
-                Write-Output $obj
-                Export-Csv -Path "\\MyFileServer01\MyShare$\powershell\logs\remove-adcompdns.csv" -InputObject $obj -NoTypeInformation -Append # requires powershell 3 for append
-            } catch  { write-warning $_.Exception.Message}
-        } #if should process
-    } #foreach comp
-}
-
-END{}
-}
 
 function get-LAPSCred {
 <#
@@ -329,6 +243,10 @@ function get-LAPSCred {
  Author: Dave Bremer
  Date: 6/5/2017
 
+ #TODO - gracefully handle error where not in laps, or even in AD
+
+ #tidy up error
+
 #>
 [cmdletBinding()]
 Param ([Parameter (
@@ -345,11 +263,17 @@ BEGIN {}
 
 PROCESS{            
     
+    $adminpassword = Get-AdmPwdPassword -ComputerName $computername     
     
-    $secpassword = ConvertTo-SecureString (Get-AdmPwdPassword -ComputerName $computername | select -expand password) -AsPlainText -Force
-    $cred = New-Object System.Management.Automation.PSCredential (“$computername\administrator",$secpassword)
-    $cred
-    
+    if ($adminpassword.password) {
+        $secpassword = ConvertTo-SecureString ($adminpassword | select -expand password) -AsPlainText -Force
+        $cred = New-Object System.Management.Automation.PSCredential (“$computername\administrator",$secpassword)
+        $cred
+    } else {  #error
+        if ($adminpassword){
+            write-error ("{0} is in AD but has no LAPS password" -f $ComputerName)
+            } else { write-error ("{0} not in AD" -f $ComputerName)}
+    }
 }
 
 END{}
