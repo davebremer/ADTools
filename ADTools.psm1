@@ -258,7 +258,13 @@ Param ([Parameter (
             [string] $ComputerName
         )
 
-BEGIN {}
+BEGIN {
+    #check if we can call the necessary command
+    if (-not (Get-Command -Name Get-AdmPwdPassword -ErrorAction SilentlyContinue)) {
+       throw "Cannot find `"Get-AdmPwdPassword`". You need to import the module AdmPwd.PS for LAPS operations"
+    }
+
+}
 
 
 PROCESS{            
