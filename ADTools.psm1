@@ -326,6 +326,7 @@ Will return all of the user objects which are in Wibble but NOT in Foo
             ValueFromPipelineByPropertyName = $TRUE
                 )]
             [ValidateNotNullOrEmpty()]
+            [ValidateScript({Get-ADGroup $_})]
             [Alias('g1')]
             [string] $Group1,
 
@@ -335,6 +336,7 @@ Will return all of the user objects which are in Wibble but NOT in Foo
                 ValueFromPipelineByPropertyName = $TRUE
                 )]
             [ValidateNotNullOrEmpty()]
+            [ValidateScript({Get-ADGroup $_})]
             [Alias('g2')]
             [string] $Group2,
 
@@ -362,10 +364,10 @@ PROCESS {
     }
 
 
+    #removing this to make adding -missing easier. The efficiency was more academic than experienced anyway
+
     # Check which group is smaller. Using the smallest for the loop dramatically
     # reduces run time if there's a massive group and a tiny one
-
-    #removing this to make adding -missing easier. The efficiency was more academic than experienced anyway
     <#
     if ($G1members.count -le $G2members.count) {
         Write-Verbose ("{0} is the smallest" -f $Group1)
@@ -401,4 +403,90 @@ PROCESS {
     } #for loop
 } #process
 END {}
+}
+
+function get-UserGroupDiff {
+<#
+.SYNOPSIS
+ Find the groups that are different between users.
+
+.DESCRIPTION
+ Find the groups that one AD User is a member of which another user is not. Alternativly, with -match, find the groups that both users are members of
+
+.PARAMETER User1
+The name of the first user
+
+.PARAMETER User2
+The name of the second user
+
+.PARAMETER Match
+Tells the script to return the Groups that both users are a member of
+
+.EXAMPLE
+get-UserGroupDiff -User1 Alice -User2 Bob
+
+Will find all of the groups which Alice is a member of that Bob is not
+
+.EXAMPLE
+get-UserGroupDiff -User1 Alice -User2 Bob
+
+Will return all of the user objects which both Alice and Bob are members of
+
+.NOTES
+ Author: Dave Bremer
+ Date: 16/6/2017
+ Revisions:
+ 
+
+#>
+
+    [cmdletBinding()]
+    Param ([Parameter (
+            Mandatory=$True,
+            position = 1,
+            ValueFromPipelineByPropertyName = $TRUE
+                )]
+            [ValidateNotNullOrEmpty()]
+            [ValidateScript({Get-ADUser $_})]
+            [string] $User1,
+
+            [Parameter (
+            Mandatory=$True,
+            position = 2,
+            ValueFromPipelineByPropertyName = $TRUE
+                )]
+            [ValidateNotNullOrEmpty()]
+            [ValidateScript({Get-ADUser $_})]
+            [string] $User2,
+
+            [switch] $Match
+            )
+
+BEGIN {
+    $U1Groups = (Get-ADUser $User1 -Properties memberof | select -ExpandProperty memberof)
+    $U2Groups = (Get-ADUser $User2 -Properties memberof | select -ExpandProperty memberof)
+}
+
+PROCESS {
+
+    foreach ($group1 in $U1Groups ) {
+
+        $detail = Get-ADGroup $group1 -Properties Name,DistinguishedName,Description,GroupCategory,GroupScope
+
+        if ($u2groups -contains $group1) {
+            
+             if ($PSBoundParameters.Keys -contains 'Match') { Write-Output $detail}
+        } else {
+            if ($PSBoundParameters.Keys -notcontains 'Match') {Write-Output $detail}
+            
+        }
+        
+       
+    }
+    
+
+}
+
+END{}
+
 }
