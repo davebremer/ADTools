@@ -284,3 +284,121 @@ PROCESS{
 
 END{}
 }
+
+function Get-Member2Groups {
+<#
+.SYNOPSIS
+ Find the members of two groups, or members missing from one group that are in the other.
+
+.DESCRIPTION
+ Find the members of two groups. If either of the groups are not found the script exits. A switch of -missing will list the members of the first group that are NOT in the second group
+ 
+.PARAMETER Group1
+The name of the first group - alias g1
+
+.PARAMETER Group2
+The name of the second group - alias g2
+
+.PARAMETER missing
+Tells the script to return the members of Group1 that are missing from Group2
+
+.EXAMPLE
+get-member2groups -group1 Wibble -group2 Foo
+
+Will find all of the user objects which are members of both the group Wibble and Foo
+
+.EXAMPLE
+get-member2groups -group1 Wibble -group2 Foo -missing
+
+Will return all of the user objects which are in Wibble but NOT in Foo
+
+.NOTES
+ Author: Dave Bremer
+ Date: 23/9/2015
+ Revisions:
+ 
+
+#>
+    [cmdletBinding()]
+    Param ([Parameter (
+            Mandatory=$True,
+            position = 1,
+            ValueFromPipelineByPropertyName = $TRUE
+                )]
+            [ValidateNotNullOrEmpty()]
+            [Alias('g1')]
+            [string] $Group1,
+
+            [Parameter (
+                Mandatory=$True,
+                Position=2,
+                ValueFromPipelineByPropertyName = $TRUE
+                )]
+            [ValidateNotNullOrEmpty()]
+            [Alias('g2')]
+            [string] $Group2,
+
+            [switch] $missing
+            )
+BEGIN {}
+
+PROCESS {
+    try {
+        write-verbose ("Getting members of group {0}" -f $Group1)
+        $G1members = Get-ADGroupMember -identity  $Group1 -recursive -ErrorAction stop
+        write-verbose ("{0} has {1} members" -f $Group1,($G1members.count))
+    } catch {
+        Write-Error $_
+        return
+    }
+
+    try {
+        write-verbose ("Getting members of group {0}" -f $Group2)
+        $G2members = Get-ADGroupMember -Identity $Group2 -recursive -ErrorAction stop
+        write-verbose ("{0} has {1} members" -f $Group2,($G2members.count))
+    } catch {
+        Write-Error $_
+        return
+    }
+
+
+    # Check which group is smaller. Using the smallest for the loop dramatically
+    # reduces run time if there's a massive group and a tiny one
+
+    #removing this to make adding -missing easier. The efficiency was more academic than experienced anyway
+    <#
+    if ($G1members.count -le $G2members.count) {
+        Write-Verbose ("{0} is the smallest" -f $Group1)
+        $member1 = $G1members
+        $member2 = $G2members.SamAccountName
+    } else {
+        Write-Verbose ("{0} is the smallest" -f $Group2)
+        $member1 = $G2members
+        $member2 = $G1members.SamAccountName
+    }
+    #>
+
+    $member1 = $G1members
+    $member2 = $G2members.SamAccountName
+
+    #vars for progress bar
+    $counter = 0
+    $tot = $member1.count
+
+    foreach ($person in $member1) {
+  
+        #draw progress bar
+        $counter+=1
+        $prog=[system.math]::round($counter/$tot*100,2)
+        write-progress -activity ("Remaining: {0}" -f ($tot-$counter)) -status "$prog% Complete:" -percentcomplete $prog;
+        
+        if ($member2 -contains $person.samaccountname){
+           if ($PSBoundParameters.Keys -notcontains 'missing'){ Write-Output $person}
+        } else {
+            if ($PSBoundParameters.Keys -contains 'missing'){ Write-Output $person}
+            # write-verbose ("NOT found {0}" -f $person.name)
+        } #if then
+    } #for loop
+} #process
+END {}
+}
