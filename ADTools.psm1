@@ -299,8 +299,11 @@ The name of the first group - alias g1
 .PARAMETER Group2
 The name of the second group - alias g2
 
-.PARAMETER missing
+.PARAMETER Missing
 Tells the script to return the members of Group1 that are missing from Group2
+
+.PARAMETER Stats
+Gets a count of the number of groups only the left is a member of, the number only the right user is a member of, and the number both users are a member of
 
 .EXAMPLE
 get-member2groups -group1 Wibble -group2 Foo
@@ -405,6 +408,7 @@ PROCESS {
 END {}
 }
 
+
 function get-UserGroupDiff {
 <#
 .SYNOPSIS
@@ -459,29 +463,49 @@ Will return all of the user objects which both Alice and Bob are members of
             [ValidateScript({Get-ADUser $_})]
             [string] $User2,
 
-            [switch] $Match
+            [switch] $Match,
+
+            [switch] $stats
             )
 
-BEGIN {
-    $U1Groups = (Get-ADUser $User1 -Properties memberof | select -ExpandProperty memberof)
-    $U2Groups = (Get-ADUser $User2 -Properties memberof | select -ExpandProperty memberof)
-}
+BEGIN {}
 
 PROCESS {
 
+    $U1Groups = (Get-ADUser $User1 -Properties memberof | select -ExpandProperty memberof)
+    $U2Groups = (Get-ADUser $User2 -Properties memberof | select -ExpandProperty memberof)
+
+    $counter = New-Object PSObject -Property @{
+            LeftOnly = 0
+            Both = 0
+            RightOnly = 0
+            }
+    $counter.psobject.typenames.insert(0, 'daveb.adtools.GroupStats')
+
+    
     foreach ($group1 in $U1Groups ) {
 
         $detail = Get-ADGroup $group1 -Properties Name,DistinguishedName,Description,GroupCategory,GroupScope
 
         if ($u2groups -contains $group1) {
             
-             if ($PSBoundParameters.Keys -contains 'Match') { Write-Output $detail}
+             if ($PSBoundParameters.Keys -contains 'Match' -and $PSBoundParameters.Keys -notcontains 'Stats') { Write-Output $detail}
+             $counter.LeftOnly++
         } else {
-            if ($PSBoundParameters.Keys -notcontains 'Match') {Write-Output $detail}
+            if ($PSBoundParameters.Keys -notcontains 'Match' -and $PSBoundParameters.Keys -notcontains 'Stats') {Write-Output $detail}
+            $Counter.Both++
             
-        }
-        
+        }        
        
+    } #foreach U1
+
+    if ($PSBoundParameters.Keys -contains 'Stats') {
+         foreach ($group2 in $U2Groups ) {
+            if ($u1groups -notcontains $group2) {$counter.RightOnly++}
+        }
+
+        Write-Output $counter
+        
     }
     
 
