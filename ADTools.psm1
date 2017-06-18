@@ -424,7 +424,14 @@ The name of the first user
 The name of the second user
 
 .PARAMETER Match
-Tells the script to return the Groups that both users are a member of
+Tells the script to return the Groups that both users are a member of. This is ignored is the -Stats flag is used
+
+.PARAMETER Stats
+Reports on the:
+    * Number of groups unique to the first/left user
+    * Number of groups unique to the second/right user
+    * Number of groups that both users are a member of
+
 
 .EXAMPLE
 get-UserGroupDiff -User1 Alice -User2 Bob
@@ -432,9 +439,18 @@ get-UserGroupDiff -User1 Alice -User2 Bob
 Will find all of the groups which Alice is a member of that Bob is not
 
 .EXAMPLE
-get-UserGroupDiff -User1 Alice -User2 Bob
+get-UserGroupDiff -User1 Alice -User2 Bob -match
 
 Will return all of the user objects which both Alice and Bob are members of
+
+.EXAMPLE
+get-UserGroupDiff -user1 Alice01 -user2 Bob01 -Stats
+
+Returns the count for groups that each is a unique member of and the number that they are both a member of - e.g.
+
+RightOnly     LeftOnly    Both
+---------    --------     ----
+25            1           54
 
 .NOTES
  Author: Dave Bremer
