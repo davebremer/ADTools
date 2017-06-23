@@ -1,4 +1,11 @@
-﻿# This was my very first script. Its clumsy and really could do with a refresh. Don't judge me :-Þ
+﻿### TODO ###
+#get-adcontacts - currently have to do get-adobject then use ldapfilter
+#Get-ADObject -LDAPFilter “objectClass=Contact” 
+#
+
+
+
+# This was my very first script. Its clumsy and really could do with a refresh. Don't judge me :-Þ
 function Get-UserDetails {
 <#
 .SYNOPSIS
@@ -216,7 +223,7 @@ function Get-UserDetails {
 
 
 
-function get-LAPSCred {
+function Get-LAPSCred {
 <#
 .SYNOPSIS
     Returns a PSCredential object for a computer
@@ -303,7 +310,7 @@ The name of the second group - alias g2
 Tells the script to return the members of Group1 that are missing from Group2
 
 .PARAMETER Stats
-Gets a count of the number of groups only the left is a member of, the number only the right user is a member of, and the number both users are a member of
+Gets a count of the number of users only in the left group, the number only in the right group, and the number in both groups. This makes the -missing switch redundant
 
 .EXAMPLE
 get-member2groups -group1 Wibble -group2 Foo
@@ -315,11 +322,19 @@ get-member2groups -group1 Wibble -group2 Foo -missing
 
 Will return all of the user objects which are in Wibble but NOT in Foo
 
+.EXAMPLE
+get-member2groups -group1 Wibble -group2 Foo -stats | Format-table -autosize
+
+RightOnly LeftOnly Both
+--------- -------- ----
+        1       70   19
+
+
 .NOTES
  Author: Dave Bremer
  Date: 23/9/2015
  Revisions:
- 
+ 23/6/2017 added stats
 
 #>
     [cmdletBinding()]
@@ -343,11 +358,21 @@ Will return all of the user objects which are in Wibble but NOT in Foo
             [Alias('g2')]
             [string] $Group2,
 
-            [switch] $missing
+            [switch] $missing,
+
+            [switch] $Stats
             )
 BEGIN {}
 
 PROCESS {
+
+    $counter = New-Object PSObject -Property @{
+            LeftOnly = 0
+            Both = 0
+            RightOnly = 0
+            }
+    $counter.psobject.typenames.insert(0, 'daveb.adtools.GroupStats')
+
     try {
         write-verbose ("Getting members of group {0}" -f $Group1)
         $G1members = Get-ADGroupMember -identity  $Group1 -recursive -ErrorAction stop
@@ -368,10 +393,12 @@ PROCESS {
 
 
     #removing this to make adding -missing easier. The efficiency was more academic than experienced anyway
+    
+    <#
 
     # Check which group is smaller. Using the smallest for the loop dramatically
     # reduces run time if there's a massive group and a tiny one
-    <#
+
     if ($G1members.count -le $G2members.count) {
         Write-Verbose ("{0} is the smallest" -f $Group1)
         $member1 = $G1members
@@ -383,33 +410,46 @@ PROCESS {
     }
     #>
 
-    $member1 = $G1members
-    $member2 = $G2members.SamAccountName
-
     #vars for progress bar
-    $counter = 0
-    $tot = $member1.count
+    $ProgCounter = 0
+    $tot = $G1members.count
 
-    foreach ($person in $member1) {
-  
+    ForEach-Object ($person in $G1members) {
+
+
         #draw progress bar
-        $counter+=1
-        $prog=[system.math]::round($counter/$tot*100,2)
-        write-progress -activity ("Remaining: {0}" -f ($tot-$counter)) -status "$prog% Complete:" -percentcomplete $prog;
+        $ProgCounter+=1
+        $prog=[system.math]::round($ProgCounter/$tot*100,2)
+        write-progress -activity ("Remaining: {0}" -f ($tot-$ProgCounter)) -status "$prog% Complete:" -percentcomplete $prog;
         
-        if ($member2 -contains $person.samaccountname){
-           if ($PSBoundParameters.Keys -notcontains 'missing'){ Write-Output $person}
+        if ($G2members.SamAccountName -contains $person.samaccountname){
+            #member of both groups
+           if ($PSBoundParameters.Keys -notcontains 'missing' -and $PSBoundParameters.Keys -notcontains 'Stats'){ Write-Output $person}
+           $Counter.Both++
+
         } else {
-            if ($PSBoundParameters.Keys -contains 'missing'){ Write-Output $person}
+            #Just member of Group1
+            if ($PSBoundParameters.Keys -contains 'missing' -and $PSBoundParameters.Keys -notcontains 'Stats'){ Write-Output $person}
             # write-verbose ("NOT found {0}" -f $person.name)
+            $Counter.LeftOnly++
+
         } #if then
+
     } #for loop
+
+    if ($PSBoundParameters.Keys -contains 'Stats') {
+        ForEach-Object ($person in $G2members ) {
+            if ($G1members.SamAccountName -notcontains $person.samaccountname) {$counter.RightOnly++}
+        }
+        Write-Output $counter
+    }# if stats
+    
 } #process
 END {}
 }
 
 
-function get-UserGroupDiff {
+function Get-UserGroupDiff {
 <#
 .SYNOPSIS
  Find the groups that are different between users.
@@ -448,9 +488,9 @@ get-UserGroupDiff -user1 Alice01 -user2 Bob01 -Stats
 
 Returns the count for groups that each is a unique member of and the number that they are both a member of - e.g.
 
-RightOnly     LeftOnly    Both
----------    --------     ----
-25            1           54
+LeftOnly Both RightOnly
+-------- ---- ---------
+       1   54        25
 
 .NOTES
  Author: Dave Bremer
@@ -506,10 +546,10 @@ PROCESS {
         if ($u2groups -contains $group1) {
             
              if ($PSBoundParameters.Keys -contains 'Match' -and $PSBoundParameters.Keys -notcontains 'Stats') { Write-Output $detail}
-             $counter.LeftOnly++
+             $Counter.Both++
         } else {
             if ($PSBoundParameters.Keys -notcontains 'Match' -and $PSBoundParameters.Keys -notcontains 'Stats') {Write-Output $detail}
-            $Counter.Both++
+            $counter.LeftOnly++
             
         }        
        
