@@ -17,7 +17,7 @@ A _-stats_ switch will return a count of the member that are in both groups, jus
 ##### TODO
 rewrite so that it works on groups with computer objects too
 
-###  Get-UserGroupDifft
+###  Get-UserGroupDiff
 Find the groups that one AD User is a member of which another user is not. Alternativly, with -match, find the groups that both users are members of.
 
 A _-stats_ switch will return a count of the member that are in both groups, just in one group, or just in the other.
