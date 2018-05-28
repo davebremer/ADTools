@@ -159,7 +159,7 @@ function Get-UserDetails {
                                                                         $prop.Add("PassLastSet", $User.PasswordLastSet)
                                                                         $prop.Add("Enabled", $User.Enabled)
                                                                         $prop.Add("LockedOut",$user.LockedOut)
-                                                                        $prop.Add("LastLogon",[DateTime]::FromFileTime($user."lastlogontimestamp"))
+                                                                        $prop.Add("LastLogon",[DateTime]::FromFileTime($user."lastlogontimestamp").ToString('d/MM/yyyy'))
                                                                         }
 
 
@@ -176,6 +176,7 @@ function Get-UserDetails {
                                                 "Name" = $User.DisplayName;
                                                 "Email" = $User.EmailAddress;
                                                 "EmployeeNumber" = $User.EmployeeNumber;
+                                                "AccountExpiryDate" = $user.AccountExpirationDate;
                                                 "Title" = $User.Title;
                                                 "Department" = $User.Department;
                                                 "Office" = $user.Office;
@@ -192,7 +193,7 @@ function Get-UserDetails {
                                                 "Created" = $User.whenCreated;
                                                 "PassExpired" = $User.PasswordExpired;
                                                 "PassLastSet" = $User.PasswordLastSet;
-                                                "LastLogon" = [DateTime]::FromFileTime($user."lastlogontimestamp");
+                                                "LastLogon" = [DateTime]::FromFileTime($user."lastlogontimestamp").ToString('d/MM/yyyy');
                                                 "Username" = $user.SamAccountName;
                                                 "Enabled" = $user.Enabled;
                                                 "LockedOut" = $user.LockedOut;
@@ -380,7 +381,7 @@ PROCESS {
     } catch {
         Write-Error $_
         return
-    }
+    } #try-catch group1 members
 
     try {
         write-verbose ("Getting members of group {0}" -f $Group2)
@@ -389,7 +390,7 @@ PROCESS {
     } catch {
         Write-Error $_
         return
-    }
+    } # try-catch group2 members
 
 
     #removing this to make adding -missing easier. The efficiency was more academic than experienced anyway
@@ -414,7 +415,7 @@ PROCESS {
     $ProgCounter = 0
     $tot = $G1members.count
 
-    ForEach-Object ($person in $G1members) {
+    ForEach ($person in $G1members) {
 
 
         #draw progress bar
@@ -438,7 +439,7 @@ PROCESS {
     } #for loop
 
     if ($PSBoundParameters.Keys -contains 'Stats') {
-        ForEach-Object ($person in $G2members ) {
+        ForEach ($person in $G2members ) {
             if ($G1members.SamAccountName -notcontains $person.samaccountname) {$counter.RightOnly++}
         }
         Write-Output $counter
@@ -481,7 +482,7 @@ Will find all of the groups which Alice is a member of that Bob is not
 .EXAMPLE
 get-UserGroupDiff -User1 Alice -User2 Bob -match
 
-Will return all of the user objects which both Alice and Bob are members of
+Will return all of the groups which both Alice and Bob are both members of
 
 .EXAMPLE
 get-UserGroupDiff -user1 Alice01 -user2 Bob01 -Stats
@@ -570,3 +571,94 @@ PROCESS {
 END{}
 
 }
+
+function Get-LastLogonToAD {
+<#
+.SYNOPSIS
+ Gets the last login time for a username by querying all domain controllers. Very slow. Consider using lastlogondate property with get-aduser.
+
+.DESCRIPTION
+ Gets the last login time for a username by querying all domain controllers. This takes forever - its really only
+ worth running if you doubt the lastlogondate value. That uses lastlogontimestamp which is replicated but can be up to 
+ 14 days out of date. 
+
+ 
+
+
+.PARAMETER UserName
+Username to search
+
+
+.EXAMPLE
+Get-LastLogonToAD -username daveb
+Returns the last login time for daveb
+
+.NOTES
+ Author: Dave Bremer
+
+ TODO - really should look into some way to parralleise this - workflows perhaps?
+ 
+
+#>
+    [cmdletBinding()]
+    Param ([Parameter (
+            Mandatory=$True,
+            ValueFromPipeLine = $TRUE,
+            ValueFromPipelineByPropertyName = $TRUE
+                )]
+            [ValidateNotNullOrEmpty()]
+            [Alias('SamID')]
+            [string] $UserName
+            )
+
+BEGIN{
+    $dc = Get-ADDomainController -Filter * | Select-Object name
+    $tot = $dc.count
+    $user = $null
+   
+}
+
+PROCESS {
+     write-verbose "looking for $username"     
+    $counter=0 #for progress bar
+    foreach ($c in $dc) {
+        #draw progress bar
+        $counter+=1
+        $prog=[system.math]::round($counter/$tot*100,2)
+        write-progress -activity ("Server {0}. {1} servers left to check" -f $c.name,($tot-$counter)) -status "$prog% Complete:" -percentcomplete $prog;
+        
+        #search server
+        try{
+            Write-verbose ("Server: {0}, User {1}" -f $c.name,$username)
+            $temp = get-aduser -Server $c.name -identity $username -Properties lastlogon
+            Write-Verbose $temp
+
+            Write-verbose ("{0} LastLogon {1}" -f $c.name,[DateTime]::FromFileTime($temp.lastlogon))
+
+            if ($user.LastLogon -lt $temp.lastlogon) { 
+                $user = $temp.PsObject.Copy() 
+                $recent = $c.name
+            }
+        } catch {
+        $recent = $null
+        Write-verbose ("Error getting from Server: {0}" -f $c.name)
+        
+        }
+    
+
+    }
+
+          
+    $prop = @{"LatestDC" = $recent;
+            # really shouldn't change data before output. Think about putting this in a manifest to convert from american to d/m/y on display
+            "LastLogon" = [DateTime]::FromFileTime($user.lastlogon).ToString('d/MM/yyyy HH:mm:ss')
+            } # prop
+                               
+
+    $obj = New-Object -TypeName PSObject -Property $prop
+    $obj.psobject.typenames.insert(0, 'daveb.adtools.lastlogon')
+    Write-Output $obj 
+}
+END{}
+}
+
