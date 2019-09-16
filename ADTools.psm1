@@ -193,7 +193,7 @@ function Get-UserDetails {
                                                 "Created" = '{0:dd/MM/yyyy}' -f $User."whenCreated";
                                                 "PassExpired" = $User.PasswordExpired;
                                                 "PassLastSet" = '{0:dd/MM/yyyy}' -f $User."PasswordLastSet";
-                                                "PasswodExpires" = '{0:dd/MM/yyyy}' -f ([datetime]::FromFileTime($User."msDS-UserPasswordExpiryTimeComputed"));
+                                                "PasswordExpires" = '{0:dd/MM/yyyy}' -f ([datetime]::FromFileTime($User."msDS-UserPasswordExpiryTimeComputed"));
                                                 "LastLogon" = [DateTime]::FromFileTime($user."lastlogontimestamp").ToString('d/MM/yyyy');
                                                 "Username" = $user.SamAccountName;
                                                 "Enabled" = $user.Enabled;
