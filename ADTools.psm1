@@ -160,6 +160,7 @@ function Get-UserDetails {
                                                                         $prop.Add("Enabled", $User.Enabled)
                                                                         $prop.Add("LockedOut",$user.LockedOut)
                                                                         $prop.Add("LastLogon",[DateTime]::FromFileTime($user."lastlogontimestamp").ToString('d/MM/yyyy'))
+                                                                        $prop.Add("PasswordExpires", [datetime]::FromFileTime($User."msDS-UserPasswordExpiryTimeComputed").ToString('d/MM/yyyy'));
                                                                         }
 
 
