@@ -249,11 +249,16 @@ function Get-LAPSCred {
 
     using the credential directly in a credential switch
 
+.EXAMPLE
+    (Get-LAPSCred pc-1234 ).GetNetworkCredential().password
+    Returns the plaintext of the laps password
+
 .NOTES
  Author: Dave Bremer
  Date: 6/5/2017
 
  #TODO - gracefully handle error where not in laps, or even in AD
+ 
 
  #tidy up error
 
