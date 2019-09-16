@@ -126,10 +126,10 @@ function Get-UserDetails {
             write-verbose "Searching: $searching"
             foreach ( $item in $searching ) {
                 switch($Set){
-                    "user" { $UserObj = Get-ADUser -filter { name -like $item } -property *; break }
+                    "user" { $UserObj = Get-ADUser -filter { name -like $item } -property *,"msDS-UserPasswordExpiryTimeComputed"; break }
 
                     "samid" { Try { # fatal exception if searching by identity that doesn't exist.
-                                    $UserObj = Get-ADUser -identity $item -property *; break 
+                                    $UserObj = Get-ADUser -identity $item -property *,"msDS-UserPasswordExpiryTimeComputed"; break 
                                     } Catch{ Write-Verbose "nothing found"}
                                 } #samid
                 } #switch
@@ -176,7 +176,7 @@ function Get-UserDetails {
                                                 "Name" = $User.DisplayName;
                                                 "Email" = $User.EmailAddress;
                                                 "EmployeeNumber" = $User.EmployeeNumber;
-                                                "AccountExpiryDate" = $user.AccountExpirationDate;
+                                                "AccountExpiryDate" = '{0:dd/MM/yyyy}' -f $user."AccountExpirationDate";
                                                 "Title" = $User.Title;
                                                 "Department" = $User.Department;
                                                 "Office" = $user.Office;
@@ -190,9 +190,10 @@ function Get-UserDetails {
                                                 "MobilePhone" = $User.MobilePhone ;
                                                 "Mobile" = $User.Mobile;
                                                 "OfficePhone"= $User.OfficePhone;
-                                                "Created" = $User.whenCreated;
+                                                "Created" = '{0:dd/MM/yyyy}' -f $User."whenCreated";
                                                 "PassExpired" = $User.PasswordExpired;
-                                                "PassLastSet" = $User.PasswordLastSet;
+                                                "PassLastSet" = '{0:dd/MM/yyyy}' -f $User."PasswordLastSet";
+                                                "PasswodExpires" = '{0:dd/MM/yyyy}' -f ([datetime]::FromFileTime($User."msDS-UserPasswordExpiryTimeComputed"));
                                                 "LastLogon" = [DateTime]::FromFileTime($user."lastlogontimestamp").ToString('d/MM/yyyy');
                                                 "Username" = $user.SamAccountName;
                                                 "Enabled" = $user.Enabled;
