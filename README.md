@@ -24,3 +24,8 @@ A `-stats` switch will return a count of the member that are in both groups, jus
 
 ### Get-LastLogonToAD
 This gets a list of domain controllers and trawls them looking for the last login timestamp. This was written to get past arguments over whether the timestamp on the user object is synched reliably across all domain controllers.
+
+### Test-Cred
+From https://www.powershellbros.com/test-credentials-using-powershell-function/
+Allows checking whether a password works for a given user
+
