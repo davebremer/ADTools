@@ -1,5 +1,30 @@
-﻿#https://www.powershellbros.com/test-credentials-using-powershell-function/
-function Test-Cred {
+﻿function Test-Cred {
+<#
+.SYNOPSIS
+    Tests whether a password works to authenticate a given username
+ 
+
+.DESCRIPTION
+    Tests whether a password works to authenticate a user.
+
+    If successful, returned "Authenticated" otherwise returns "Not authenticated"
+ 
+
+.PARAMETER ComputerName
+    A username, samaccountname
+
+.EXAMPLE
+    test-cred myusername
+
+.LINK
+ Blog post source of code https://www.powershellbros.com/test-credentials-using-powershell-function/
+  
+.NOTES
+ Author: Pawel Janowicz
+ Date: 2018/1/16
+ 
+
+#>
            
     [CmdletBinding()]
     [OutputType([String])] 
