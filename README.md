@@ -28,5 +28,4 @@ This gets a list of domain controllers and trawls them looking for the last logi
 ### Test-Cred
 From https://www.powershellbros.com/test-credentials-using-powershell-function/
 Allows checking whether a password works for a given user
-##### TODO
-Add help and document - what am i? A savage?
+
