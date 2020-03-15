@@ -10,8 +10,8 @@
     If successful, returned "Authenticated" otherwise returns "Not authenticated"
  
 
-.PARAMETER ComputerName
-    A username, samaccountname
+.PARAMETER Credentials
+    A username, samaccountname (which will call get-credential), or a full credential object
 
 .EXAMPLE
     test-cred myusername
