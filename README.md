@@ -29,3 +29,6 @@ This gets a list of domain controllers and trawls them looking for the last logi
 From https://www.powershellbros.com/test-credentials-using-powershell-function/
 Allows checking whether a password works for a given user
 
+### Get-UserGroupMembership
+Returns the groups that a user is a member of
+
