@@ -131,17 +131,25 @@ function Get-UserDetails {
                     write-verbose "Properties: $Item / $user"
                     
                     # Convert the password expiry calculated date
-                    # Refer to https://stackoverflow.com/questions/51165528/contradictory-values-from-active-directory-regarding-password-expiry-date
-                    if ($User.'msDS-UserPasswordExpiryTimeComputed' -eq 0x7FFFFFFFFFFFFFFF ) {
-                        $PasswordExpires = "Never Expires"
-                        $PasswordRemainingDays = "Never Expires"
-                    } else {
-                        $EndDate = (Get-Date)
-                        $PasswordExpires = '{0:dd/MM/yyyy}' -f ([datetime]::FromFileTime($User.'msDS-UserPasswordExpiryTimeComputed'));
-                        $PasswordRemainingDays = (new-timespan -start $EndDate -end ([datetime]::FromFileTime($User."msDS-UserPasswordExpiryTimeComputed"))).Days;
-                    }
+                    # Refer to https://stackoverflow.com/questions/51165528/contradictory-values-from-active-directory-regarding-password-expiry-datesaw s
+                    # Just in case zero is a possibility (saw some claims it can be) - added check for that
+                    switch ($User.'msDS-UserPasswordExpiryTimeComputed') {
+                        0x7FFFFFFFFFFFFFFF {
+                            $PasswordExpires = "Never Expires"
+                            $PasswordRemainingDays = "Infinite"
+                        } 
+                        0 {
+                            $PasswordExpires = "Unspecified"
+                            $PasswordRemainingDays = "Unspecified"
+                        }
                     
-
+                        default {
+                            $EndDate = (Get-Date)
+                            $PasswordExpires = '{0:dd/MM/yyyy}' -f ([datetime]::FromFileTime($User.'msDS-UserPasswordExpiryTimeComputed'));
+                            $PasswordRemainingDays = (new-timespan -start $EndDate -end ([datetime]::FromFileTime($User."msDS-UserPasswordExpiryTimeComputed"))).Days;
+                        }
+                    
+                    }
                     $prop = @{"Name"=$User.DisplayName}
 
                     Switch ($PSBoundParameters) {
