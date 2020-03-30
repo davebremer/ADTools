@@ -132,13 +132,13 @@ function Get-UserDetails {
                     
                     # Convert the password expiry calculated date
                     # Refer to https://stackoverflow.com/questions/51165528/contradictory-values-from-active-directory-regarding-password-expiry-datesaw s
-                    # Just in case zero is a possibility (saw some claims it can be) - added check for that
+                    # Also https://ldapwiki.com/wiki/MsDS-UserPasswordExpiryTimeComputed
                     switch ($User.'msDS-UserPasswordExpiryTimeComputed') {
-                        0x7FFFFFFFFFFFFFFF {
+                        0x7FFFFFFFFFFFFFFF { # for various reasons password never expires (several bit values in user account control can cause this)
                             $PasswordExpires = "Never Expires"
                             $PasswordRemainingDays = "Infinite"
                         } 
-                        0 {
+                        0 { # pwdLastSet = null or pwdLastSet = 0
                             $PasswordExpires = "Unspecified"
                             $PasswordRemainingDays = "Unspecified"
                         }
