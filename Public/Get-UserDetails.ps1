@@ -119,16 +119,28 @@ function Get-UserDetails {
             write-verbose "Searching: $searching"
             foreach ( $item in $searching ) {
                 switch($Set){
-                    "user" { $UserObj = Get-ADUser -filter { name -like $item } -property *,"msDS-UserPasswordExpiryTimeComputed"; break }
+                    "user" { $UserObj = Get-ADUser -filter { name -like $item } -property *,'msDS-UserPasswordExpiryTimeComputed'; break }
 
                     "samid" { Try { # fatal exception if searching by identity that doesn't exist.
-                                    $UserObj = Get-ADUser -identity $item -property *,"msDS-UserPasswordExpiryTimeComputed"; break 
+                                    $UserObj = Get-ADUser -identity $item -property *,'msDS-UserPasswordExpiryTimeComputed'; break 
                                     } Catch{ Write-Verbose "nothing found"}
                                 } #samid
                 } #switch
                 
                 foreach ( $user in $userobj) {
                     write-verbose "Properties: $Item / $user"
+                    
+                    # Convert the password expiry calculated date
+                    # Refer to https://stackoverflow.com/questions/51165528/contradictory-values-from-active-directory-regarding-password-expiry-date
+                    if ($User.'msDS-UserPasswordExpiryTimeComputed' -eq 0x7FFFFFFFFFFFFFFF ) {
+                        $PasswordExpires = "Never Expires"
+                        $PasswordRemainingDays = "Never Expires"
+                    } else {
+                        $EndDate = (Get-Date)
+                        $PasswordExpires = '{0:dd/MM/yyyy}' -f ([datetime]::FromFileTime($User.'msDS-UserPasswordExpiryTimeComputed'));
+                        $PasswordRemainingDays = (new-timespan -start $EndDate -end ([datetime]::FromFileTime($User."msDS-UserPasswordExpiryTimeComputed"))).Days;
+                    }
+                    
 
                     $prop = @{"Name"=$User.DisplayName}
 
@@ -148,14 +160,15 @@ function Get-UserDetails {
                             #{$PSBoundParameters.Keys -contains 'HomeDirectory'} {$prop.Add("HomeDirectory", $User.HomeDirectoryectory)}
                             {$PSBoundParameters.Keys -contains 'UPN'} {$prop.Add("UserPrincipalName", $User.UserPrincipalName)}
                             {$PSBoundParameters.Keys -contains 'Manager'} {$prop.Add("Manager", ($User.Manager -replace "(CN=)(.*?),.*",'$2'))}
-                            {$PSBoundParameters.Keys -contains 'Pass'} {$prop.Add("PassExpired", $User.PasswordExpired)
-                                                                        $prop.Add("PasswordExpires",'{0:dd/MM/yyyy}' -f [datetime]::FromFileTime($user."msDS-UserPasswordExpiryTimeComputed"))
-                                                                        $prop.Add("PassLastSet", '{0:dd/MM/yyyy}' -f $User."PasswordLastSet")
-                                                                        $prop.Add("Enabled", $User.Enabled)
-                                                                        $prop.Add("LockedOut",$user.LockedOut)
-                                                                        $prop.Add("LastLogon",[DateTime]::FromFileTime($user."lastlogontimestamp").ToString('d/MM/yyyy'))
-                                                                        #$prop.Add("PasswordExpires", [datetime]::FromFileTime($User."msDS-UserPasswordExpiryTimeComputed").ToString('d/MM/yyyy'));
-                                                                        }
+                            {$PSBoundParameters.Keys -contains 'Pass'} {
+                                                                            $prop.Add("PassExpired", $User.PasswordExpired)
+                                                                            $prop.Add("PassLastSet", '{0:dd/MM/yyyy}' -f $User."PasswordLastSet")
+                                                                            $prop.Add("Enabled", $User.Enabled)
+                                                                            $prop.Add("LockedOut",$user.LockedOut)
+                                                                            $prop.Add("LastLogon",[DateTime]::FromFileTime($user."lastlogontimestamp").ToString('d/MM/yyyy'))
+                                                                            $prop.Add("PasswordExpires", $PasswordExpires)
+                                                                            $prop.Add("PasswordRemainingDays",$PasswordRemainingDays)
+                                                                            }
 
 
                             {$PSBoundParameters.Keys -contains 'Address'} { $prop.Add("Title", $User.Title)
@@ -166,8 +179,10 @@ function Get-UserDetails {
                                                                             $prop.Add("State",$user.State)
                                                                             $prop.Add("StreetAddress",$user.StreetAddress)
                                                                             }
-                                                                                                 
-                            default {$prop = @{  "OU" = $User.CanonicalName;
+                                                                                                
+                            default {
+
+                                $prop = @{  "OU" = $User.CanonicalName;
                                                 "Name" = $User.DisplayName;
                                                 "Email" = $User.EmailAddress;
                                                 "EmployeeNumber" = $User.EmployeeNumber;
@@ -188,7 +203,10 @@ function Get-UserDetails {
                                                 "Created" = '{0:dd/MM/yyyy}' -f $User."whenCreated";
                                                 "PassExpired" = $User.PasswordExpired;
                                                 "PassLastSet" = '{0:dd/MM/yyyy}' -f $User."PasswordLastSet";
-                                                "PasswordExpires" = '{0:dd/MM/yyyy}' -f ([datetime]::FromFileTime($User."msDS-UserPasswordExpiryTimeComputed"));
+                                                
+                                                "PasswordExpires" = $PasswordExpires;
+                                                "PasswordRemainingDays" = $PasswordRemainingDays;
+
                                                 "LastLogon" = [DateTime]::FromFileTime($user."lastlogontimestamp").ToString('d/MM/yyyy');
                                                 "Username" = $user.SamAccountName;
                                                 "Enabled" = $user.Enabled;
