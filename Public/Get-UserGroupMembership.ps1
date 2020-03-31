@@ -29,7 +29,7 @@ The username, or a list of usernames
             ValueFromPipelineByPropertyName = $TRUE
                 )]
             [ValidateNotNullOrEmpty()]
-            #[ValidateScript({Get-ADUser $_})]
+            [ValidateScript({Get-ADUser $_})]
             [string[]] $UserName
             )
 
@@ -57,7 +57,6 @@ PROCESS {
             write-verbose ("Category: {0}, Scope: {1}" -f $g.GroupCategory, $g.GroupScope)
 
             $obj.GroupName = $g.name
-
             $obj.GroupDN = $Group
             $obj.GroupCategory = $g.GroupCategory
             $obj.GroupScope = $g.GroupScope
