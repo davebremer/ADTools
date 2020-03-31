@@ -35,7 +35,7 @@ The username, or a list of usernames
 
 BEGIN {
     $obj = New-Object PSObject -Property @{ 
-                    User = $null
+                    UserName = $null
                     GroupName = $null
                     GroupDN = $null
                     GroupCategory = $null
@@ -50,7 +50,7 @@ PROCESS {
     foreach ($User in $username){
         $Groups = (get-aduser $user -properties memberof | select -ExpandProperty memberof)
 
-        $obj.User = $User
+        $obj.UserName = $User
         foreach ( $Group in $Groups) { 
             $g = get-adgroup $Group -Properties mail
             write-verbose $g
