@@ -4,13 +4,10 @@
  Return a list of groups that the user is a member of.
 
 .DESCRIPTION
- Return a list of groups that the user is a member of. Script takes can take an array of usernames. Returns an object consisting or
- username, Group name, and Group distinguished name
+ Return a list of groups that the user is a member of. Script takes can take an array of usernames. 
 
 .PARAMETER UserName
 The username, or a list of usernames
-
-
 
 .EXAMPLE
  Get-UserGroupMembershiip myusername, yourusername
@@ -19,6 +16,7 @@ The username, or a list of usernames
  Author: Dave Bremer
  Date: 9 Feb 2020
  Revisions:
+ 3 Apr 2020 - added a bunch of fields about group
  
 
 #>
@@ -40,7 +38,8 @@ BEGIN {
                     GroupDN = $null
                     GroupCategory = $null
                     GroupScope = $null
-                    GroupMail = $null
+                    Mail = $null
+                    Description = $null
                  }
     $obj.psobject.typenames.insert(0, 'daveb.UserGroupMembership')
 
@@ -52,7 +51,7 @@ PROCESS {
 
         $obj.UserName = $User
         foreach ( $Group in $Groups) { 
-            $g = get-adgroup $Group -Properties mail
+            $g = get-adgroup $Group -Properties mail,description
             write-verbose $g
             write-verbose ("Category: {0}, Scope: {1}" -f $g.GroupCategory, $g.GroupScope)
 
@@ -60,7 +59,8 @@ PROCESS {
             $obj.GroupDN = $Group
             $obj.GroupCategory = $g.GroupCategory
             $obj.GroupScope = $g.GroupScope
-            $obj.GroupMail = $g.mail
+            $obj.Mail = $g.mail
+            $obj.Description = $g.description
             
 
              
