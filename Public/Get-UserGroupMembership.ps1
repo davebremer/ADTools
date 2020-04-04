@@ -10,7 +10,18 @@
 The username, or a list of usernames
 
 .EXAMPLE
- Get-UserGroupMembershiip myusername, yourusername
+ Get-UserGroupMembership myusername, yourusername
+ Outputs details of groups from myusername and yourusername
+
+ .EXAMPLE
+ Get-UserGroupMembership myUserName | select UserName,GroupName | Out-GridView
+ Displays the group membership in gridview. For a permanent output consider changing Out-Gridview to something like
+ "export-csv t:\myfolder\groupnames.csv -NoTypeInformation"
+
+ .EXAMPLE
+ Get-UserGroupMembership myUserName | where mail -ne $null
+ Will list all of the groups which are mail enabled
+
 
 .NOTES
  Author: Dave Bremer
