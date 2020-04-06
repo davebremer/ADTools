@@ -176,6 +176,7 @@ function Get-UserDetails {
                                                                             $prop.Add("LastLogon",[DateTime]::FromFileTime($user."lastlogontimestamp").ToString('d/MM/yyyy'))
                                                                             $prop.Add("PasswordExpires", $PasswordExpires)
                                                                             $prop.Add("PasswordRemainingDays",$PasswordRemainingDays)
+                                                                            $prop.Add("AccountExpiryDate", '{0:dd/MM/yyyy}' -f $user."AccountExpirationDate")
                                                                             }
 
 
