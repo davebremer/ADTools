@@ -5,7 +5,9 @@ function Get-UserDetails {
  Get key details of a user object
 
 .DESCRIPTION
- Search for a user object in AD by a person's name or there username (SamID or SamAccountName). A number of flags allow the mix and match of fields. If no filtering flags are used then the full list is output. Otherwise you can build up the output by adding specific fields as flags
+ Search for a user object in AD by a person's name or there username (SamID or SamAccountName). A number of flags allow the mix and match of fields. 
+ If no filtering flags are used then the (almost) full list is output. Otherwise you can build up the output by adding specific fields as flags.
+ The exception to the "full list" as default is the info field. If you want that then you need to specify
 
 .PARAMETER Name
  Search for user object(s) by the person's name. Wildcards are allowed. This is the default if parameters are not named.
@@ -42,6 +44,9 @@ function Get-UserDetails {
 .PARAMETER Pass
  Adds the PassWordExpired and PasswordLastSet to the output
 
+.PARAMETER Info
+ Adds the info field ie the notes field
+
 .EXAMPLE
  get-UserDetails -Name "Alice Roberts", "Ron Rivest"
  Will return details of both Alice Roberts and Ron Rivest
@@ -61,6 +66,11 @@ function Get-UserDetails {
 .EXAMPLE
  get-UserDetails -SamId "ABC12"
  Will return the details of a user with the username ABC12
+
+.EXAMPLE
+ Get-UserDetails -username ABC* -info | select username,name,enabled,LastLogon,AccountExpiryDate,email,info
+ will return the selected details including info for any username starting with ABC
+ Useful for looking at password expiry for groups of similarly named accounts
 
 .NOTES
  Author: Dave Bremer
@@ -99,8 +109,8 @@ function Get-UserDetails {
             [switch] $Address,
             #[switch] $OpenP,  #open profile dir
             #[switch]$OpenHD #open Home Directory
-            [switch] $UPN
-            
+            [switch] $UPN,
+            [switch] $info
             )
 
     BEGIN{        
@@ -117,12 +127,14 @@ function Get-UserDetails {
 
     PROCESS {
             write-verbose "Searching: $searching"
+            
             foreach ( $item in $searching ) {
+                Write-Verbose "item: $item"
                 switch($Set){
                     "user" { $UserObj = Get-ADUser -filter { name -like $item } -property *,'msDS-UserPasswordExpiryTimeComputed'; break }
 
                     "samid" { Try { # fatal exception if searching by identity that doesn't exist.
-                                    $UserObj = Get-ADUser -identity $item -property *,'msDS-UserPasswordExpiryTimeComputed'; break 
+                                    $UserObj = Get-ADUser -filter {samaccountname -like $item} -property *,'msDS-UserPasswordExpiryTimeComputed'; break 
                                     } Catch{ Write-Verbose "nothing found"}
                                 } #samid
                 } #switch
@@ -225,8 +237,15 @@ function Get-UserDetails {
                                                 "ipPhone" = $user.ipPhone
                                                } # prop
                                 } #default
+
+                            
                         
                         } #switch PSBoundParameters
+
+                        #the info field is not added by default as too noisy
+                        if ($PSBoundParameters.Keys -contains 'info'){
+                                $prop.add("info", (($user.info).replace("`n","| ").replace("`r","| ").replace("| |","|")))
+                            }
 
                         $obj = New-Object -TypeName PSObject -Property $prop
                         $obj.psobject.typenames.insert(0, 'daveb.adtools.userdetails')
