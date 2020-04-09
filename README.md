@@ -32,3 +32,5 @@ Allows checking whether a password works for a given user
 ### Get-UserGroupMembership
 Returns the groups that a user is a member of
 
+### Get-GroupMembershipDetails
+Returns the members of a group with details of the member - including recursing groups that are members
