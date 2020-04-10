@@ -82,7 +82,7 @@ PROCESS {
     foreach ($group in $thegroups) {
         $allmembers = Get-ADGroupMember $group.samaccountname
 
-        foreach ($user in $allmembers) { 
+        foreach ($member in $allmembers) { 
             $obj.GroupName = $group.name
             $obj.MemberName = $null
             $obj.UserDisplayName = $null
@@ -91,9 +91,9 @@ PROCESS {
             $obj.Enabled = $null
             $obj.MemberType = $null
 
-             if ($user.objectClass -eq "user") { 
-                Write-Verbose $user.SamAccountName
-                 $userobj = get-aduser $user.samaccountname -properties office,enabled,manager
+             if ($member.objectClass -eq "user") { 
+                Write-Verbose $member.SamAccountName
+                 $userobj = get-aduser $member.samaccountname -properties *
                  $obj.MemberName = $userobj.Samaccountname
                  $obj.UserDisplayName = $userobj.name
                  $obj.Office = $userobj.office
@@ -102,13 +102,14 @@ PROCESS {
                  $obj.memberType = "User"
 
             } else { # a group member is itself a group
-            # would recursion work I wonder
+            # would recursion work I wonder?
             # why yes, yes it does
             # what could possibly go wrong?
+            # duplicates were the least of my worry - but duplicates there are
                 
-                $Obj.MemberName = $user.SamAccountName
+                $Obj.MemberName = $member.SamAccountName
                 $obj.MemberType = "Group"
-                Get-GroupMembershipDetails $user.name
+                Get-GroupMembershipDetails $member.name
             }
             Write-Output $obj 
         

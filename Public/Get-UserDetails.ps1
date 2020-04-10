@@ -42,7 +42,15 @@ function Get-UserDetails {
  Adds the manager to the output
 
 .PARAMETER Pass
- Adds the PassWordExpired and PasswordLastSet to the output
+ Adds a number of password and account related date fields to the output:
+    PasswordExpires
+    PassLastSet
+    Enabled
+    LockedOut
+    AccountExpiryDate
+    PassExpired
+    LastLogon
+    PasswordRemainingDays
 
 .PARAMETER Info
  Adds the info field ie the notes field
@@ -99,8 +107,8 @@ function Get-UserDetails {
             [ValidateNotNullOrEmpty()]
             [string[]] $Name,
 
-            [switch] $Tel, #telephone - both office and cell
-            [switch] $UName, #username
+            [switch] $Tel, # adds telephone fields - both office and cell
+            [switch] $UName, #adds username fields - the variable "username" already used for another paramter to search for samid
             [switch] $EmployeeNumber,
             [switch] $Department,
            # [switch] $HomeDirectory,
@@ -244,7 +252,7 @@ function Get-UserDetails {
 
                         #the info field is not added by default as too noisy
                         if ($PSBoundParameters.Keys -contains 'info'){
-                                $prop.add("info", (($user.info).replace("`n","| ").replace("`r","| ").replace("| |","|")))
+                                $prop.add("info", ($user.info).replace("`r`n"," | "))
                             }
 
                         $obj = New-Object -TypeName PSObject -Property $prop

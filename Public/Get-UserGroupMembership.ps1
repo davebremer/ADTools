@@ -51,6 +51,7 @@ BEGIN {
                     GroupScope = $null
                     Mail = $null
                     Description = $null
+                    Info = $null
                  }
     $obj.psobject.typenames.insert(0, 'daveb.UserGroupMembership')
 
@@ -62,7 +63,7 @@ PROCESS {
 
         $obj.UserName = $User
         foreach ( $Group in $Groups) { 
-            $g = get-adgroup $Group -Properties mail,description
+            $g = get-adgroup $Group -Properties mail,description,info
             write-verbose $g
             write-verbose ("Category: {0}, Scope: {1}" -f $g.GroupCategory, $g.GroupScope)
 
@@ -72,6 +73,7 @@ PROCESS {
             $obj.GroupScope = $g.GroupScope
             $obj.Mail = $g.mail
             $obj.Description = $g.description
+            $obj.Info = ($g.info -replace("`r`n"," | "))
             
 
              
