@@ -5,7 +5,7 @@ This is mostly a collection of AD helper tools for a Service Desk person. The fu
 ### Get-UserDetails
 Search for a user object in AD by a person's name or there username (SamID or SamAccountName) with wildcards. Basically, its a cut-down list from `get-AdUser foo -properties *`. I created and frequently use this rather than `get-ADUser` because of the easy use of wildcards, and I've preselected fields that I find useful. I tend to forget the actual names of some of the AD fields
 
-A number of flags allow the mix and match of fields. If no filtering flags are used then the full list is output. Otherwise you can build up the output by adding specific fields as flags
+A number of flags allow the mix and match of fields. If no filtering flags are used then the full list is output (minus info which needs to be explicly added). Otherwise you can build up the output by adding specific fields as flags
 
 ### Get-LAPSCred
 Returns a credential object extracted from LAPS on AD. [Check this page for further info](https://technet.microsoft.com/en-us/mt227395.aspx)
