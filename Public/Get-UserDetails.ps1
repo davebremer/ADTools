@@ -1,4 +1,4 @@
-# This was my very first script. Its clumsy and really could do with a refresh. Don't judge me :-Þ
+# This was my very first script. Its clumsy and really could do with a refresh. Don't judge me :-/
 function Get-UserDetails {
 <#
 .SYNOPSIS
@@ -82,6 +82,9 @@ function Get-UserDetails {
 
 .NOTES
  Author: Dave Bremer
+
+ #TODO
+ bug with info if blank - the replace moans it can't replace a null. Test for null before ad
  
  
 
@@ -252,7 +255,11 @@ function Get-UserDetails {
 
                         #the info field is not added by default as too noisy
                         if ($PSBoundParameters.Keys -contains 'info'){
-                                $prop.add("info", ($user.info).replace("`r`n"," | "))
+                                if ($user.info){
+                                    $prop.add("info", ($user.info).replace("`r`n"," | "))
+                                } else {
+                                    $prop.add("info",$null)
+                                }
                             }
 
                         $obj = New-Object -TypeName PSObject -Property $prop

@@ -73,7 +73,13 @@ PROCESS {
             $obj.GroupScope = $g.GroupScope
             $obj.Mail = $g.mail
             $obj.Description = $g.description
-            $obj.Info = ($g.info -replace("`r`n"," | "))
+
+            if ($g.info){
+                $obj.Info = ($g.info -replace("`r`n"," | "))
+            } else {
+                $obj.Info = $null
+            }
+            
             
 
              
