@@ -21,6 +21,7 @@
     Office
     Manager
     MemberType
+    EmailAddress
  
 
 .PARAMETER GroupName
@@ -28,15 +29,15 @@
 
 
 .EXAMPLE
- Get-GroupMembershipDetails gumboot
+ Get-ADGroupMemberDetails gumboot
  will return all the members of the group "gumboot"
 
 .EXAMPLE
- Get-GroupMembershipDetails gumboot, socks
+ Get-ADGroupMemberDetails gumboot, socks
  will return all the members of the group "gumboot" and "socks"
 
 .EXAMPLE
- Get-GroupMembershipDetails "gum*"
+ Get-ADGroupMemberDetails "gum*"
  will return all the members of the group "gumboot" and "gumball" an any other group which begin with "gum"
 
 .NOTES
@@ -67,9 +68,10 @@ BEGIN {
                     Office = $null
                     Manager = $null
                     MemberType = $null
+                    EmailAddress = $null
                     
                  }
-    $obj.psobject.typenames.insert(0, 'daveb.GroupMembershipDetails')
+    $obj.psobject.typenames.insert(0, 'daveb.ADGroupMemberDetails')
 
 } #BEGIN
 
@@ -90,6 +92,7 @@ PROCESS {
             $obj.Office = $null
             $obj.Enabled = $null
             $obj.MemberType = $null
+            $obj.EmailAddress = $null
 
              if ($member.objectClass -eq "user") { 
                 Write-Verbose $member.SamAccountName
@@ -100,6 +103,7 @@ PROCESS {
                  $obj.Enabled = $userobj.Enabled
                  $obj.Manager = ($Userobj.Manager -replace "(CN=)(.*?),.*",'$2')
                  $obj.memberType = "User"
+                 $obj.EmailAddress = $userobj.EmailAddress
 
             } else { # a group member is itself a group
             # would recursion work I wonder?
@@ -109,7 +113,7 @@ PROCESS {
                 
                 $Obj.MemberName = $member.SamAccountName
                 $obj.MemberType = "Group"
-                Get-GroupMembershipDetails $member.name
+                Get-ADGroupMemberDetails $member.name
             }
             Write-Output $obj 
         
