@@ -50,6 +50,7 @@ PARAM (
 	[Switch]$directonly
 )
 BEGIN {
+    # if you change the fields remember to update the select statement for output
     $obj = New-Object PSObject -Property @{ 
                     Name = $null
                     SamAccountName = $null
@@ -78,7 +79,7 @@ PROCESS
             $obj.emailaddress = $direct.mail
             $obj.Manager = ($direct.manager  -replace "(CN=)(.*?),.*",'$2')
             
-            Write-Output $obj | select Name,SamAccountName,EmailAddress Manager
+            Write-Output $obj | select Name,SamAccountName,EmailAddress,Manager
 
 			If (-not ($PSBoundParameters['DirectOnly']) -and $direct.directreports) {
                 write-verbose ("Recursing for {0}" -f $direct.Name)
