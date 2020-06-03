@@ -66,7 +66,7 @@ PROCESS
             }
         
         }
-        $obj.ReportingLine += $thisuser #get the last user in the list
+        if (-not $linemanager) {$obj.ReportingLine += $thisuser } #get the last user in the list
         Write-Output $obj
     }#foreach account
 		
