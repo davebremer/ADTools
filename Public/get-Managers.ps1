@@ -1,10 +1,11 @@
 ﻿function Get-Managers {
 <#
 .SYNOPSIS
-	Lists the reporting chain for a person
+	Gets the reporting chain for a person
 	
 .DESCRIPTION
-	lists as name, manager pairs the reporting chain
+	returns the persons name and an array containing their reporting lines
+    The field ReportingLine is an array of Microsoft.ActiveDirectory.Management.ADUser
 	
 	
 .PARAMETER Identity
@@ -13,21 +14,19 @@
 	
 .EXAMPLE
  get-managers myname123
+ 
+ Returns columns name, reportingline 
 
- name           Manager       
-----           -------       
-Alice Abrims   Bob Black
-Bob Black      Chris Clod
-Chris Clod     Dave Davis
-Dave Davis     Edgar Evans
+.EXAMPLE
+ get-managers abc123 | select -expandProperty reportingline | select name
+
+ Returns a list of managers for the username abc123
+
 
 .NOTES	
 Author: Dave Bremer
 Date: 2020/6/3
 
-#todo
-It'd be better to have a single record spit out with one field being a collectio/array of managers
-then take an array of inputs
 	
 #>
 #Requires -Modules ActiveDirectory
@@ -35,11 +34,16 @@ then take an array of inputs
 [CmdletBinding()]
 PARAM (
 	[Parameter(Mandatory)]
-	[String]$Identity,
+	[String[]]$Identity,
 	[Switch]$lineManager
 )
 BEGIN {
-    
+    # if you change the fields remember to update the select statement for output
+    $obj = New-Object PSObject -Property @{ 
+                    Name = $null
+                    ReportingLine = $null 
+                 }
+    $obj.psobject.typenames.insert(0, 'daveb.Managers')
 
 }
 
@@ -47,15 +51,23 @@ PROCESS
 {
 	foreach ($Account in $Identity)
 	{
+        
+        $obj.ReportingLine = @()
         $thisuser = get-aduser -identity $account -Properties manager
+        $obj.Name = $thisuser.Name
+        
         while ($thisuser.manager){
-           $thisuser | select name,@{n="Manager";e={$_.Manager -replace "(CN=)(.*?),.*",'$2'}}
-           if (-not $linemanager) { 
+            
+            $obj.ReportingLine += $thisuser
+            if (-not $linemanager) { 
                 $thisuser = get-aduser -identity $thisuser.manager -Properties manager
-           } else {
+            } else {
                 break
-           }
+            }
+        
         }
+        $obj.ReportingLine += $thisuser #get the last user in the list
+        Write-Output $obj
     }#foreach account
 		
 
