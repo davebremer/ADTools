@@ -58,11 +58,14 @@ BEGIN {
 }
 
 PROCESS {
+
     foreach ($User in $username){
-        $Groups = (get-aduser $user -properties memberof | select -ExpandProperty memberof)
+        #$Groups = (get-aduser $user -properties memberof | select -ExpandProperty memberof)
+        $groups = Get-ADPrincipalGroupMembership $user
 
         $obj.UserName = $User
         foreach ( $Group in $Groups) { 
+        
             $g = get-adgroup $Group -Properties mail,description,info
             write-verbose $g
             write-verbose ("Category: {0}, Scope: {1}" -f $g.GroupCategory, $g.GroupScope)
