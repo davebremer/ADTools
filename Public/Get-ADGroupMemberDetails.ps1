@@ -22,6 +22,7 @@
     Manager
     MemberType
     EmailAddress
+    LastLogin
  
 
 .PARAMETER GroupName
@@ -69,6 +70,8 @@ BEGIN {
                     Manager = $null
                     MemberType = $null
                     EmailAddress = $null
+                    LastLogin = $null
+                    Title = $null
                     
                  }
     $obj.psobject.typenames.insert(0, 'daveb.ADGroupMemberDetails')
@@ -82,7 +85,9 @@ PROCESS {
     Write-Verbose ("thegroups: {0}" -f ($thegroups | measure).Count)
 
     foreach ($group in $thegroups) {
-        $allmembers = Get-ADGroupMember $group.samaccountname
+        #$allmembers = Get-ADGroupMember $group.samaccountname
+        $groupdn = get-adgroup $group|select -expandproperty distinguishedname
+        $allmembers = Get-ADObject -Filter 'memberof -eq $groupdn'  -properties *
 
         foreach ($member in $allmembers) { 
             $obj.GroupName = $group.name
@@ -93,18 +98,29 @@ PROCESS {
             $obj.Enabled = $null
             $obj.MemberType = $null
             $obj.EmailAddress = $null
+            $obj.LastLogin = $null
+            $obj.title = $null
+            Write-Verbose ("{0} is a {1}" -f $member.name,$member.objectclass)
 
-             if ($member.objectClass -eq "user") { 
-                Write-Verbose $member.SamAccountName
+
+             if ($member.objectClass -eq "user") {   
                  $userobj = get-aduser $member.samaccountname -properties *
                  $obj.MemberName = $userobj.Samaccountname
                  $obj.UserDisplayName = $userobj.name
                  $obj.Office = $userobj.office
                  $obj.Enabled = $userobj.Enabled
                  $obj.Manager = ($Userobj.Manager -replace "(CN=)(.*?),.*",'$2')
-                 $obj.memberType = "User"
+                 $obj.memberType = $member.objectClass
                  $obj.EmailAddress = $userobj.EmailAddress
+                 $obj.lastlogin = [DateTime]::FromFileTime($userobj."lastlogontimestamp").ToString('d/MM/yyyy hh:mm:ss')
+                 $obj.title = $userobj.title
 
+            } elseif ($member.objectClass -eq "contact") {
+                 $userobj = $member
+                 $obj.UserDisplayName = $userobj.name
+                 $obj.memberType = $member.objectClass
+                 $obj.EmailAddress = $userobj.mail
+            
             } else { # a group member is itself a group
             # would recursion work I wonder?
             # why yes, yes it does
@@ -112,7 +128,7 @@ PROCESS {
             # duplicates were the least of my worry - but duplicates there are
                 
                 $Obj.MemberName = $member.SamAccountName
-                $obj.MemberType = "Group"
+                $obj.MemberType = $member.objectClass
                 Get-ADGroupMemberDetails $member.name
             }
             Write-Output $obj 
